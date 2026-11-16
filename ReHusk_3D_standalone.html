@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>ReHusk – Mô hình 3D lót cốc từ trấu</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#e4e8da;--bg2:#b7c0a3;--fg:#23291d;--panel:rgba(247,249,241,.84);--line:rgba(35,41,29,.2);--acc:#8a6320;--btn:#23291d;--btnfg:#f4f6ec;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#2b3326;--bg2:#12160f;--fg:#eef1e4;--panel:rgba(26,32,22,.84);--line:rgba(238,241,228,.2);--acc:#e0b765;--btn:#eef1e4;--btnfg:#1a2016}}
+:root[data-theme="dark"]{--bg1:#2b3326;--bg2:#12160f;--fg:#eef1e4;--panel:rgba(26,32,22,.84);--line:rgba(238,241,228,.2);--acc:#e0b765;--btn:#eef1e4;--btnfg:#1a2016}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--fg);background:radial-gradient(ellipse at 50% 40%,var(--bg1),var(--bg2));overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#c:active{cursor:grabbing}
+header{position:absolute;left:20px;top:calc(env(safe-area-inset-top,0px) + 16px);right:20px;pointer-events:none}
+h1{margin:0;font-size:clamp(26px,5vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1}
+header p{margin:6px 0 0;font-size:14px;opacity:.75;max-width:46ch}
+.panel{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:560px;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:600;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--fg);padding:7px 12px;border-radius:999px;cursor:pointer}
+button:hover{border-color:var(--fg)}
+button.on{background:var(--btn);color:var(--btnfg);border-color:var(--btn)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sl{display:flex;gap:8px;align-items:center;margin-top:10px}
+.sl label{width:84px;flex:none}
+.sl input{flex:1;accent-color:var(--acc)}
+details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;font-weight:600}
+table{border-collapse:collapse;width:100%;margin-top:6px}
+td{padding:4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600;padding-right:10px;white-space:nowrap}
+.hint{margin-top:8px;opacity:.65;font-size:12px}
+#err{position:absolute;inset:0;z-index:5;pointer-events:none;display:none;place-items:center;text-align:center;padding:30px}
+@media (max-width:600px){header{left:14px;right:14px}header p{display:none}.panel{left:8px;right:8px;padding:10px 12px}.hint{display:none}button{padding:9px 12px}.sl label{width:76px}.sl input{height:28px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="err">Không tải được thư viện 3D. Kiểm tra kết nối mạng rồi tải lại trang.</div>
+<header>
+  <h1>ReHusk</h1>
+  <p>Lót cốc từ bột trấu, trấu nguyên vỏ và tinh bột bắp. Mô hình 3D của prototype.</p>
+</header>
+<div class="panel">
+  <div class="row" role="group" aria-label="Góc nhìn">
+    <button data-v="free" class="on">Góc tự do</button>
+    <button data-v="top">Mặt trên</button>
+    <button data-v="bottom">Mặt dưới</button>
+    <button data-v="edge">Cạnh viền</button>
+    <button id="spin" class="on">Tự xoay</button>
+  </div>
+  <div class="sl"><label for="az">Hướng sáng</label><input id="az" type="range" min="-180" max="180" value="50"></div>
+  <div class="sl"><label for="el">Độ cao sáng</label><input id="el" type="range" min="8" max="85" value="24"></div>
+  <details>
+    <summary>Thông số prototype</summary>
+    <table>
+      <tr><td>Hình dạng</td><td>Tròn, thành đứng theo khuôn silicone lót ly, đường kính khoảng 9–10 cm (mô hình: 9,5 cm)</td></tr>
+      <tr><td>Độ dày</td><td>Khoảng 5–7 mm (mô hình: 6 mm)</td></tr>
+      <tr><td>Bột vỏ trấu mịn</td><td>60 g cho 5 chiếc, vật liệu nền</td></tr>
+      <tr><td>Trấu nguyên vỏ</td><td>Khoảng 15 g, trang trí bề mặt</td></tr>
+      <tr><td>Bột bắp</td><td>30 g, nấu hồ tinh bột làm chất kết dính chính</td></tr>
+      <tr><td>Keo sữa PVA</td><td>10 g, chất kết dính bổ sung</td></tr>
+      <tr><td>Nước sạch</td><td>Khoảng 60–75 ml</td></tr>
+      <tr><td>Hoàn thiện</td><td>Mặt trên có trấu nguyên vỏ và logo FTU; cạnh viền chà nhám mịn</td></tr>
+    </table>
+  </div>
+  <div class="hint">Kéo để xoay 360°. Cuộn chuột hoặc chụm hai ngón để phóng to, thu nhỏ.</div>
+</div>
+<script>
+(function(){
+var err=document.getElementById('err');
+function show(m){err.style.display='grid';err.textContent=m;}
+window.addEventListener('error',function(ev){show('Lỗi: '+ev.message);});
+function load(list,i){
+  if(i>=list.length){show('Không tải được thư viện 3D. Hãy bật internet, hoặc đặt file three.min.js cùng thư mục với file này.');return;}
+  var s=document.createElement('script');s.src=list[i];
+  s.onload=function(){if(window.THREE)init();else load(list,i+1);};
+  s.onerror=function(){load(list,i+1);};
+  document.head.appendChild(s);
+}
+show('Đang tải thư viện 3D…');
+load(['three.min.js','https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'],0);
+function init(){
+err.style.display='none';
+try{
+var R=4.75,H=0.6,B=0.03; // cm: thành đứng theo khuôn silicone, chỉ vát cạnh rất nhỏ
+var cv=document.getElementById('c');
+var renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+var scene=new THREE.Scene();
+var camera=new THREE.PerspectiveCamera(35,1,0.1,100);
+camera.position.set(7,7,11);
+var controls=(function(){
+  var o={autoRotate:true,autoRotateSpeed:1.4},L=[],ptrs={},pd=0,vt=0,vp=0,sph={r:1,th:0,ph:1};
+  o.addEventListener=function(t,f){L.push(f);};
+  o.sync=function(){var v=camera.position;sph.r=v.length();sph.th=Math.atan2(v.x,v.z);sph.ph=Math.acos(Math.max(-1,Math.min(1,v.y/sph.r)));};
+  o.sync();
+  function ids(){return Object.keys(ptrs);}
+  function dist(){var k=ids(),a=ptrs[k[0]],b=ptrs[k[1]];return Math.hypot(a.x-b.x,a.y-b.y);}
+  function zoom(f){sph.r=Math.min(24,Math.max(3,sph.r*f));}
+  cv.addEventListener('pointerdown',function(e){
+    if(cv.setPointerCapture)try{cv.setPointerCapture(e.pointerId);}catch(x){}
+    ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
+    L.forEach(function(f){f();});
+    if(ids().length===2)pd=dist();
+  });
+  cv.addEventListener('pointermove',function(e){
+    var p=ptrs[e.pointerId];if(!p)return;
+    var dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+    if(ids().length===1){vt=-dx*0.008;vp=-dy*0.008;sph.th+=vt;sph.ph+=vp;}
+    else if(ids().length>=2){var nd=dist();if(pd>0&&nd>0)zoom(pd/nd);pd=nd;vt=vp=0;}
+  });
+  function up(e){delete ptrs[e.pointerId];pd=0;}
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.addEventListener('pointerleave',up);
+  cv.addEventListener('wheel',function(e){e.preventDefault();L.forEach(function(f){f();});zoom(Math.exp(e.deltaY*0.0012));},{passive:false});
+  o.update=function(){
+    if(ids().length===0){
+      sph.th+=vt;sph.ph+=vp;vt*=0.92;vp*=0.92;
+      if(o.autoRotate)sph.th-=0.0024*o.autoRotateSpeed/1.4;
+    }
+    sph.ph=Math.min(Math.PI-0.02,Math.max(0.02,sph.ph));
+    var sp=Math.sin(sph.ph);
+    camera.position.set(sph.r*sp*Math.sin(sph.th),sph.r*Math.cos(sph.ph),sph.r*sp*Math.cos(sph.th));
+    camera.lookAt(0,0,0);
+  };
+  return o;
+})();
+
+// seeded random
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+var rnd=rng(7);
+function mk(n){var c=document.createElement('canvas');c.width=c.height=n;return c;}
+function tex(c,srgb,rep){var t=new THREE.CanvasTexture(c);if(srgb)t.encoding=THREE.sRGBEncoding;t.anisotropy=8;if(rep){t.wrapS=THREE.RepeatWrapping;t.repeat.set(rep,1);}return t;}
+
+// grain painter
+function grain(ctx,n,base,dots,spread,size){
+  ctx.fillStyle=base;ctx.fillRect(0,0,n,n);
+  for(var i=0;i<dots;i++){
+    var v=Math.floor(rnd()*spread*2-spread);
+    ctx.fillStyle=v>0?'rgba(255,235,190,'+(0.05+rnd()*0.18)+')':'rgba(40,22,6,'+(0.05+rnd()*0.22)+')';
+    var s=size*(0.4+rnd()*1.6);
+    ctx.fillRect(rnd()*n,rnd()*n,s,s*(0.5+rnd()));
+  }
+}
+function bumpGrain(ctx,n,dots,size){
+  ctx.fillStyle='rgb(140,140,140)';ctx.fillRect(0,0,n,n);
+  for(var i=0;i<dots;i++){
+    var g=Math.floor(60+rnd()*160);
+    ctx.fillStyle='rgba('+g+','+g+','+g+','+(0.3+rnd()*0.5)+')';
+    var s=size*(0.4+rnd()*1.8);
+    ctx.beginPath();ctx.arc(rnd()*n,rnd()*n,s,0,6.283);ctx.fill();
+  }
+}
+
+// TOP textures (with FTU logo debossed)
+var N=1024;
+var tc=mk(N),tx=tc.getContext('2d');
+grain(tx,N,'#8f7048',14000,1,3.2);
+var bc=mk(N),bx=bc.getContext('2d');
+bumpGrain(bx,N,9000,2.6);
+function logo(ctx,mode){
+  ctx.font='800 230px "Be Vietnam Pro",Arial,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';
+  if(mode==='bump'){
+    for(var w=18;w>=2;w-=2){var g=Math.round(140-(18-w)*5.5);ctx.strokeStyle='rgb('+g+','+g+','+g+')';ctx.lineWidth=w;ctx.strokeText('FTU',N/2,N/2+8);}
+    ctx.fillStyle='rgb(25,25,25)';ctx.fillText('FTU',N/2,N/2+8);
+  }else{
+    ctx.fillStyle='rgba(46,28,10,.55)';ctx.fillText('FTU',N/2,N/2+8);
+  }
+}
+logo(tx,'color');logo(bx,'bump');
+var topMat=new THREE.MeshStandardMaterial({map:tex(tc,true),bumpMap:tex(bc,false),bumpScale:5,roughness:0.97,metalness:0});
+
+// BOTTOM (flat pressed side, finer grain)
+var uc=mk(512),ux=uc.getContext('2d');grain(ux,512,'#8a6d47',7000,1,2.2);
+ux.beginPath();ux.arc(256,256,150,0,6.283);ux.fillStyle='rgba(40,24,8,.10)';ux.fill();ux.lineWidth=5;ux.strokeStyle='rgba(40,24,8,.45)';ux.stroke();
+var ub=mk(512),uy=ub.getContext('2d');bumpGrain(uy,512,3500,1.8);
+// vòng tròn đồng tâm ở đáy khuôn: để lại vết lõm nông ở mặt dưới
+uy.beginPath();uy.arc(256,256,150,0,6.283);uy.fillStyle='rgba(60,60,60,.7)';uy.fill();uy.lineWidth=6;uy.strokeStyle='rgb(235,235,235)';uy.stroke();
+var botMat=new THREE.MeshStandardMaterial({map:tex(uc,true),bumpMap:tex(ub,false),bumpScale:3.2,roughness:0.95});
+
+// EDGE (sanded smooth: lighter, fine grain)
+var ec=mk(512),ex=ec.getContext('2d');grain(ex,512,'#a3825a',9000,1,1.6);
+var eb=mk(512),ey=eb.getContext('2d');bumpGrain(ey,512,5000,1.1);
+var edgeMat=new THREE.MeshStandardMaterial({map:tex(ec,true,9),bumpMap:tex(eb,false,9),bumpScale:0.5,roughness:0.82,side:THREE.DoubleSide});
+
+var g=new THREE.Group();scene.add(g);
+// top & bottom discs
+var rr=R-B+0.002;
+var top=new THREE.Mesh(new THREE.CircleGeometry(rr,128),topMat);
+top.rotation.x=-Math.PI/2;top.position.y=H/2;
+var bot=new THREE.Mesh(new THREE.CircleGeometry(rr,128),botMat);
+bot.rotation.x=Math.PI/2;bot.position.y=-H/2;
+// rounded edge via lathe (bottom to top)
+var pts=[],k=8,a;
+for(var i=0;i<=k;i++){a=i/k*Math.PI/2;pts.push(new THREE.Vector2(R-B+B*Math.cos(a),-H/2+B-B*Math.sin(a)));}
+for(i=0;i<=k;i++){a=i/k*Math.PI/2;pts.push(new THREE.Vector2(R-B+B*Math.sin(a),H/2-B+B*Math.cos(a)));}
+pts=pts.slice(0,k+1).concat(pts.slice(k+2));
+var edge=new THREE.Mesh(new THREE.LatheGeometry(pts,160),edgeMat);
+[top,bot,edge].forEach(function(m){m.castShadow=true;m.receiveShadow=true;g.add(m);});
+
+// whole rice husks on the top face
+var N_H=120,hg=new THREE.SphereGeometry(1,10,7);
+var hm=new THREE.MeshStandardMaterial({roughness:0.6,metalness:0});
+var husks=new THREE.InstancedMesh(hg,hm,N_H);
+var m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),pos=new THREE.Vector3(),sc=new THREE.Vector3(),col=new THREE.Color();
+var cols=['#d9b45f','#c99a45','#e3c477','#b9873a','#cfa956'];
+var placed=0,tries=0;
+while(placed<N_H&&tries<4000){
+  tries++;
+  var r=Math.sqrt(rnd())*(R-0.55),th=rnd()*6.283,x=r*Math.cos(th),z=r*Math.sin(th);
+  if(Math.abs(x)<2.45&&Math.abs(z)<1.05)continue; // keep logo clear
+  var L=0.22+rnd()*0.12;
+  pos.set(x,H/2+0.012,z);
+  e.set((rnd()-.5)*0.35,rnd()*6.283,(rnd()-.5)*0.35);q.setFromEuler(e);
+  sc.set(L,0.045+rnd()*0.02,L*0.38);
+  m4.compose(pos,q,sc);husks.setMatrixAt(placed,m4);
+  col.set(cols[Math.floor(rnd()*cols.length)]);husks.setColorAt(placed,col);
+  placed++;
+}
+husks.count=placed;husks.castShadow=true;husks.receiveShadow=true;g.add(husks);
+
+// ground shadow
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.ShadowMaterial({opacity:0.32}));
+ground.rotation.x=-Math.PI/2;ground.position.y=-H/2-0.001;ground.receiveShadow=true;scene.add(ground);
+
+// lights
+scene.add(new THREE.HemisphereLight(0xfff3df,0x59634a,0.7));
+var sun=new THREE.DirectionalLight(0xfff0d6,2.6);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+var sc2=sun.shadow.camera;sc2.left=-7;sc2.right=7;sc2.top=7;sc2.bottom=-7;sc2.near=1;sc2.far=40;
+sun.shadow.bias=-0.0004;sun.shadow.normalBias=0.01;sun.shadow.radius=3;
+scene.add(sun);
+var fill=new THREE.DirectionalLight(0xdbe6ff,0.5);fill.position.set(-8,5,-6);scene.add(fill);
+var under=new THREE.DirectionalLight(0xfff0d6,0.9);under.position.set(-3,-9,4);scene.add(under);
+function light(){
+  var az=document.getElementById('az').value*Math.PI/180,el=document.getElementById('el').value*Math.PI/180,d=14;
+  sun.position.set(d*Math.cos(el)*Math.sin(az),d*Math.sin(el),d*Math.cos(el)*Math.cos(az));
+}
+document.getElementById('az').addEventListener('input',light);
+document.getElementById('el').addEventListener('input',light);
+light();
+
+// view presets
+var goal=null,views={free:[7,7,11],top:[0,12,0.01],bottom:[0,-12,0.01],edge:[0.01,0.5,8]};
+var btns=document.querySelectorAll('[data-v]');
+btns.forEach(function(b){b.addEventListener('click',function(){
+  btns.forEach(function(o){o.classList.remove('on');});b.classList.add('on');
+  goal=new THREE.Vector3().fromArray(views[b.dataset.v]);
+  setSpin(b.dataset.v==='free');
+});});
+var spinBtn=document.getElementById('spin');
+function setSpin(on){controls.autoRotate=on;spinBtn.classList.toggle('on',on);}
+spinBtn.addEventListener('click',function(){setSpin(!controls.autoRotate);});
+controls.addEventListener('start',function(){goal=null;setSpin(false);});
+
+var lw=0,lh=0;
+function resize(){
+  var w=cv.clientWidth||innerWidth||320,h=cv.clientHeight||innerHeight||480;
+  lw=cv.clientWidth;lh=cv.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;camera.fov=w<h?50:35;camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);resize();
+
+renderer.setAnimationLoop(function(){
+  if(cv.clientWidth!==lw||cv.clientHeight!==lh)resize();
+  if(goal){camera.position.lerp(goal,0.07);controls.sync();if(camera.position.distanceTo(goal)<0.02)goal=null;}
+  controls.update();
+  renderer.render(scene,camera);
+});
+}catch(e){show(/WebGL/i.test(e.message)?'Trình duyệt hoặc thiết bị này không bật được WebGL, nên không hiển thị được mô hình 3D.':'Lỗi: '+e.message);}
+}
+})();
+</script>
+</body>
+</html>
